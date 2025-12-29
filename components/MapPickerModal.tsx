@@ -132,8 +132,8 @@ const MapPickerModal: React.FC<MapPickerModalProps> = ({ onClose, onConfirm }) =
   }, [radius, status]);
 
   return (
-    <div className="fixed inset-0 z-[150] flex items-center justify-center bg-black/90 backdrop-blur-xl p-6 animate-in fade-in duration-300">
-      <div className="bg-[#05050a] border border-purple-500/30 rounded-[2.5rem] w-full max-w-5xl h-[85vh] overflow-hidden flex flex-col shadow-[0_0_100px_rgba(139,92,246,0.3)]">
+    <div className="fixed inset-0 z-[150] flex items-center justify-center bg-[#0a0a14]/95 backdrop-blur-xl p-6 animate-in fade-in duration-300">
+      <div className="bg-[#0d0d1a] border border-purple-500/30 rounded-[2.5rem] w-full max-w-5xl h-[85vh] overflow-hidden flex flex-col shadow-2xl shadow-purple-900/20">
         
         {/* Header */}
         <div className="p-8 border-b border-white/5 flex items-center justify-between bg-gradient-to-r from-purple-900/10 to-transparent">
@@ -154,16 +154,15 @@ const MapPickerModal: React.FC<MapPickerModalProps> = ({ onClose, onConfirm }) =
         </div>
 
         <div className="flex-1 flex overflow-hidden relative">
-          <div className="flex-1 relative bg-[#010206] overflow-hidden">
-            {/* 明确设置背景色防止闪烁 */}
+          <div className="flex-1 relative bg-[#0a0a14] overflow-hidden">
             <div 
               ref={mapContainerRef} 
               className="absolute inset-0 w-full h-full" 
-              style={{ background: '#010206', minHeight: '400px' }} 
+              style={{ background: '#0a0a14', minHeight: '400px' }} 
             />
             
             {status === 'loading' && (
-              <div className="absolute inset-0 flex flex-col items-center justify-center z-20 bg-[#05050a]">
+              <div className="absolute inset-0 flex flex-col items-center justify-center z-20 bg-[#0d0d1a]">
                 <div className="w-16 h-16 relative">
                    <div className="absolute inset-0 border-4 border-purple-500/20 rounded-full" />
                    <div className="absolute inset-0 border-4 border-transparent border-t-purple-500 rounded-full animate-spin" />
@@ -173,8 +172,7 @@ const MapPickerModal: React.FC<MapPickerModalProps> = ({ onClose, onConfirm }) =
             )}
 
             {status === 'error' && (
-              <div className="absolute inset-0 flex flex-col items-center justify-center z-20 bg-[#05050a] px-10 text-center">
-                {/* Fix: use ICONS.Negative instead of ICONS.XCircle */}
+              <div className="absolute inset-0 flex flex-col items-center justify-center z-20 bg-[#0d0d1a] px-10 text-center">
                 <div className="text-rose-500 mb-4 scale-[1.5] opacity-80">{ICONS.Negative || '⚠️'}</div>
                 <h4 className="text-white font-black uppercase mb-2 tracking-widest">服务初始化中断</h4>
                 <p className="text-[10px] text-slate-500 max-w-xs leading-relaxed uppercase">{errorMessage}</p>
@@ -190,13 +188,13 @@ const MapPickerModal: React.FC<MapPickerModalProps> = ({ onClose, onConfirm }) =
             {status === 'ready' && (
               <>
                 <div className="absolute top-6 left-6 pointer-events-none space-y-2 z-10">
-                  <div className="bg-black/80 backdrop-blur-md px-4 py-2 rounded-xl border border-purple-500/30 text-[9px] font-black text-purple-400 uppercase tracking-widest shadow-lg">
+                  <div className="bg-[#0d0d1a]/80 backdrop-blur-md px-4 py-2 rounded-xl border border-purple-500/30 text-[9px] font-black text-purple-400 uppercase tracking-widest shadow-lg">
                     <span className="animate-pulse mr-2 text-emerald-500">●</span> 卫星实时渲染中
                   </div>
                 </div>
 
                 <div className="absolute bottom-6 right-6 flex flex-col gap-2 z-10">
-                    <div className="bg-black/80 backdrop-blur-md p-4 rounded-xl border border-white/5 text-[10px] font-bold text-slate-400 space-y-2 uppercase tracking-widest shadow-2xl">
+                    <div className="bg-[#0d0d1a]/80 backdrop-blur-md p-4 rounded-xl border border-white/5 text-[10px] font-bold text-slate-400 space-y-2 uppercase tracking-widest shadow-xl">
                         <div className="flex justify-between gap-8"><span>LNG:</span> <span className="text-white tabular-nums">{center[0].toFixed(6)}</span></div>
                         <div className="flex justify-between gap-8"><span>LAT:</span> <span className="text-white tabular-nums">{center[1].toFixed(6)}</span></div>
                     </div>
@@ -205,9 +203,9 @@ const MapPickerModal: React.FC<MapPickerModalProps> = ({ onClose, onConfirm }) =
             )}
           </div>
 
-          <div className="w-80 bg-[#080810] p-10 flex flex-col gap-10 border-l border-white/5 relative z-30">
+          <div className="w-80 bg-[#0d0d1a]/50 p-10 flex flex-col gap-10 border-l border-white/5 relative z-30">
             <div className="space-y-6">
-               <label className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">范围调节</label>
+               <label className="text-[10px] font-black text-purple-400/70 uppercase tracking-[0.2em]">范围调节</label>
                <div className="space-y-4">
                  <div className="flex justify-between items-center">
                     <span className="text-xs font-bold text-white uppercase">检索半径 (m)</span>
@@ -222,7 +220,7 @@ const MapPickerModal: React.FC<MapPickerModalProps> = ({ onClose, onConfirm }) =
                     onChange={(e) => setRadius(parseInt(e.target.value))}
                     className="w-full h-1.5 bg-white/5 rounded-lg appearance-none cursor-pointer accent-purple-600" 
                  />
-                 <div className="flex justify-between text-[10px] font-bold text-slate-600 uppercase tracking-tighter">
+                 <div className="flex justify-between text-[10px] font-bold text-slate-500 uppercase tracking-tighter">
                     <span>100m</span>
                     <span>5km</span>
                  </div>
@@ -230,8 +228,8 @@ const MapPickerModal: React.FC<MapPickerModalProps> = ({ onClose, onConfirm }) =
             </div>
 
             <div className="space-y-6">
-               <label className="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em]">覆盖预览</label>
-               <div className="p-6 bg-purple-600/5 border border-purple-500/20 rounded-2xl space-y-4">
+               <label className="text-[10px] font-black text-purple-400/70 uppercase tracking-[0.2em]">覆盖预览</label>
+               <div className="p-6 bg-purple-600/10 border border-purple-500/20 rounded-2xl space-y-4">
                   <div className="flex items-center justify-between">
                     <span className="text-[10px] font-bold text-slate-400 uppercase">感知设备</span>
                     <span className="text-lg font-black text-white tabular-nums">{deviceCount}</span>
@@ -251,7 +249,7 @@ const MapPickerModal: React.FC<MapPickerModalProps> = ({ onClose, onConfirm }) =
                >
                  确认当前选区
                </button>
-               <button onClick={onClose} className="w-full py-4 bg-white/5 hover:bg-white/10 text-slate-500 rounded-2xl font-black text-xs uppercase tracking-[0.2em] transition-all">
+               <button onClick={onClose} className="w-full py-4 bg-white/5 hover:bg-white/10 text-slate-400 rounded-2xl font-black text-xs uppercase tracking-[0.2em] transition-all">
                  取消操作
                </button>
             </div>

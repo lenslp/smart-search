@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ICONS, MOCK_RESULTS } from '../constants';
 import { SearchParams, SampleLabel, SearchType } from '../types';
@@ -30,6 +30,57 @@ const SearchResultsPage: React.FC<SearchResultsPageProps> = ({ initialParams }) 
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [showMapModal, setShowMapModal] = useState(false);
   const [spatialInfo, setSpatialInfo] = useState<{ radius: number; deviceCount: number } | null>(null);
+  const [displayPlaceholder, setDisplayPlaceholder] = useState('');
+  const [cursorVisible, setCursorVisible] = useState(true);
+
+  const placeholderTexts = [
+    "输入特征描述（如：穿黑衣服的人）或上传图片...",
+    "在海量监控录像中快速定位目标...",
+    "支持多模态搜索：文字、图片、视频..."
+  ];
+
+  useEffect(() => {
+    let currentIndex = 0;
+    let charIndex = 0;
+    let isDeleting = false;
+    let timer: NodeJS.Timeout;
+
+    const typeWriter = () => {
+      const currentText = placeholderTexts[currentIndex];
+      
+      if (isDeleting) {
+        setDisplayPlaceholder(currentText.substring(0, charIndex - 1));
+        charIndex--;
+      } else {
+        setDisplayPlaceholder(currentText.substring(0, charIndex + 1));
+        charIndex++;
+      }
+
+      let typeSpeed = isDeleting ? 30 : 50;
+
+      if (!isDeleting && charIndex === currentText.length) {
+        typeSpeed = 2000;
+        isDeleting = true;
+      } else if (isDeleting && charIndex === 0) {
+        isDeleting = false;
+        currentIndex = (currentIndex + 1) % placeholderTexts.length;
+        typeSpeed = 500;
+      }
+
+      timer = setTimeout(typeWriter, typeSpeed);
+    };
+
+    typeWriter();
+
+    return () => clearTimeout(timer);
+  }, []);
+
+  useEffect(() => {
+    const cursorTimer = setInterval(() => {
+      setCursorVisible(v => !v);
+    }, 500);
+    return () => clearInterval(cursorTimer);
+  }, []);
 
   const toggleTrainingMode = () => {
     setIsTrainingMode(!isTrainingMode);
@@ -82,7 +133,7 @@ const SearchResultsPage: React.FC<SearchResultsPageProps> = ({ initialParams }) 
   const negCount = Object.values(labels).filter(v => v === 'negative').length;
 
   return (
-    <div className="flex-1 flex flex-col bg-[var(--bg-deep)] overflow-hidden">
+    <div className="flex-1 flex flex-col bg-[var(--bg-deep)]">
       {showMapModal && <MapPickerModal onClose={() => setShowMapModal(false)} onConfirm={handleMapConfirm} />}
       {showSurveillanceModal && (
         <SurveillanceModal 
@@ -102,12 +153,22 @@ const SearchResultsPage: React.FC<SearchResultsPageProps> = ({ initialParams }) 
 
           <div className="relative group">
             <div className="flex gap-4 p-3 bg-black/40 border border-white/10 rounded-[1.5rem] focus-within:border-purple-500/50 transition-all min-h-[80px] shadow-inner">
-              <textarea 
-                value={inputValue}
-                onChange={(e) => setInputValue(e.target.value)}
-                placeholder="在此输入新指令或点击右侧上传图片，进行二次深度检索..."
-                className="flex-1 bg-transparent text-sm text-[var(--text-primary)] placeholder-slate-600 focus:outline-none resize-none pt-1"
-              />
+              <div className="flex-1 text-sm text-[var(--text-primary)] placeholder-slate-600 pt-1 relative">
+                {inputValue ? (
+                  inputValue
+                ) : (
+                  <>
+                    <span className="text-slate-500">{displayPlaceholder}</span>
+                    <span className={`absolute inline-block w-0.5 h-4 bg-purple-400 ml-0.5 align-middle ${cursorVisible ? 'opacity-100' : 'opacity-0'} transition-opacity`} />
+                  </>
+                )}
+                <textarea 
+                  value={inputValue}
+                  onChange={(e) => setInputValue(e.target.value)}
+                  placeholder=""
+                  className="absolute inset-0 bg-transparent text-sm text-[var(--text-primary)] focus:outline-none resize-none w-full h-full opacity-0"
+                />
+              </div>
               
               <div className="w-24 border-l border-white/5 pl-4 flex flex-col items-center justify-center gap-2">
                 {selectedImage ? (

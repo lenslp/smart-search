@@ -16,12 +16,12 @@ const VideoPlayerModal: React.FC<VideoPlayerModalProps> = ({ resultId, onClose }
   }, []);
 
   return (
-    <div className="fixed inset-0 z-[110] flex items-center justify-center bg-black/95 backdrop-blur-xl p-10 animate-in zoom-in-95 duration-500">
-      <div className="bg-[#02040a] border border-purple-500/20 rounded-[2.5rem] w-full max-w-6xl overflow-hidden shadow-[0_0_150px_rgba(168,85,247,0.2)]">
+    <div className="fixed inset-0 z-[110] flex items-center justify-center bg-[#0a0a14]/95 backdrop-blur-xl p-10 animate-in zoom-in-95 duration-500">
+      <div className="bg-[#0d0d1a] border border-purple-500/20 rounded-[2.5rem] w-full max-w-6xl overflow-hidden shadow-2xl shadow-purple-900/20">
         {/* Header */}
-        <div className="p-6 flex items-center justify-between border-b border-purple-500/10 bg-[#0d0a1a]">
+        <div className="p-6 flex items-center justify-between border-b border-purple-500/10 bg-[#0d0d1a]">
            <div className="flex items-center gap-5">
-             <div className="w-12 h-12 bg-purple-600/20 text-purple-400 rounded-2xl flex items-center justify-center border border-purple-500/30 shadow-[0_0_15px_rgba(168,85,247,0.2)]">
+             <div className="w-12 h-12 bg-purple-600/20 text-purple-400 rounded-2xl flex items-center justify-center border border-purple-500/30">
                {ICONS.Video}
              </div>
              <div>
@@ -29,13 +29,13 @@ const VideoPlayerModal: React.FC<VideoPlayerModalProps> = ({ resultId, onClose }
                <p className="text-[10px] text-purple-400/60 font-bold uppercase tracking-widest mt-1">位置：核心商务区 A3路口 | 时间：2025.05.20 14:22:08</p>
              </div>
            </div>
-           <button onClick={onClose} className="p-3 hover:bg-white/5 rounded-2xl text-gray-500 hover:text-purple-400 transition-all border border-transparent hover:border-purple-500/20">
+           <button onClick={onClose} className="p-3 hover:bg-white/5 rounded-2xl text-slate-400 hover:text-purple-400 transition-all border border-transparent hover:border-purple-500/20">
               <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
            </button>
         </div>
 
         {/* Video Area */}
-        <div className="aspect-video bg-black relative flex items-center justify-center overflow-hidden group">
+        <div className="aspect-video bg-[#0a0a14] relative flex items-center justify-center overflow-hidden group">
           <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-5 pointer-events-none z-10" />
           
           {loading ? (
@@ -59,7 +59,7 @@ const VideoPlayerModal: React.FC<VideoPlayerModalProps> = ({ resultId, onClose }
                 alt="Video Stream" 
               />
               <div className="absolute inset-0 flex items-center justify-center z-20">
-                <div className="w-24 h-24 bg-purple-600/10 hover:bg-purple-600/30 backdrop-blur-xl border-2 border-purple-500/30 rounded-full flex items-center justify-center cursor-pointer transition-all group/play shadow-[0_0_50px_rgba(168,85,247,0.3)]">
+                <div className="w-24 h-24 bg-purple-600/10 hover:bg-purple-600/30 backdrop-blur-xl border-2 border-purple-500/30 rounded-full flex items-center justify-center cursor-pointer transition-all group/play shadow-lg">
                    <div className="w-0 h-0 border-t-[12px] border-t-transparent border-l-[22px] border-l-white border-b-[12px] border-b-transparent ml-2 group-hover/play:scale-110 transition-transform" />
                 </div>
               </div>
