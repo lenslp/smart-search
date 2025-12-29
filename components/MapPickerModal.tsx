@@ -8,16 +8,66 @@ interface MapPickerModalProps {
 }
 
 const MapPickerModal: React.FC<MapPickerModalProps> = ({ onClose, onConfirm }) => {
-  const [radius, setRadius] = useState(500);
+  const [radius, setRadius] = useState(1000);
   const [center, setCenter] = useState<[number, number]>([121.4737, 31.2304]);
   const [deviceCount, setDeviceCount] = useState(0);
   const [status, setStatus] = useState<'loading' | 'ready' | 'error'>('loading');
   const [errorMessage, setErrorMessage] = useState('');
+  const [locationLoaded, setLocationLoaded] = useState(false);
+  const [geoError, setGeoError] = useState<string | null>(null);
+  const initialCenterRef = useRef<[number, number]>([121.4737, 31.2304]);
+  const geoReadyRef = useRef(false);
   
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapInstance = useRef<any>(null);
   const circleInstance = useRef<any>(null);
   const markerInstance = useRef<any>(null);
+
+  // 获取用户当前位置
+  useEffect(() => {
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const userCenter: [number, number] = [
+            position.coords.longitude,
+            position.coords.latitude
+          ];
+          initialCenterRef.current = userCenter;
+          geoReadyRef.current = true;
+          setCenter(userCenter);
+          setLocationLoaded(true);
+          setGeoError(null);
+        },
+        (error) => {
+          console.log('Geolocation error:', error.message);
+          geoReadyRef.current = true;
+          setLocationLoaded(true);
+          switch(error.code) {
+            case error.PERMISSION_DENIED:
+              setGeoError('您已拒绝位置权限，将使用默认位置');
+              break;
+            case error.POSITION_UNAVAILABLE:
+              setGeoError('位置信息不可用，将使用默认位置');
+              break;
+            case error.TIMEOUT:
+              setGeoError('获取位置超时，将使用默认位置');
+              break;
+            default:
+              setGeoError('无法获取您的位置，将使用默认位置');
+          }
+        },
+        {
+          enableHighAccuracy: true,
+          timeout: 60 * 1000,
+          maximumAge: 0
+        }
+      );
+    } else {
+      geoReadyRef.current = true;
+      setLocationLoaded(true);
+      setGeoError('您的浏览器不支持地理定位，将使用默认位置');
+    }
+  }, []);
 
   useEffect(() => {
     let checkCount = 0;
@@ -45,11 +95,11 @@ const MapPickerModal: React.FC<MapPickerModalProps> = ({ onClose, onConfirm }) =
       }
 
       try {
-        // 3. 实例化地图
+        // 3. 实例化地图 - 使用 ref 中的初始中心点
         const map = new AMap.Map(mapContainerRef.current, {
           viewMode: '3D',
           zoom: 14,
-          center: center,
+          center: initialCenterRef.current,
           mapStyle: 'amap://styles/darkblue',
           animateEnable: true
         });
@@ -67,7 +117,7 @@ const MapPickerModal: React.FC<MapPickerModalProps> = ({ onClose, onConfirm }) =
 
           // 初始化覆盖物
           circleInstance.current = new AMap.Circle({
-            center: center,
+            center: initialCenterRef.current,
             radius: radius,
             strokeColor: '#8b5cf6',
             strokeOpacity: 0.8,
@@ -76,14 +126,36 @@ const MapPickerModal: React.FC<MapPickerModalProps> = ({ onClose, onConfirm }) =
             fillOpacity: 0.15,
             strokeStyle: 'dashed',
             strokeDasharray: [10, 10],
+            draggable: true,
+            cursor: 'move',
           });
 
           markerInstance.current = new AMap.Marker({
-            position: center,
+            position: initialCenterRef.current,
+            offset: new AMap.Pixel(-16, -8),
+            icon: new AMap.Icon({
+              size: new AMap.Size(32, 32),
+              image: 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(`
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="#8b5cf6">
+                  <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/>
+                  <circle cx="12" cy="9" r="2.5" fill="white"/>
+                </svg>
+              `),
+              imageSize: new AMap.Size(32, 32),
+            }),
           });
 
           map.add([circleInstance.current, markerInstance.current]);
 
+          // 监听圆形拖动事件
+          circleInstance.current.on('dragend', () => {
+            const newCenter = circleInstance.current.getCenter();
+            const centerArr: [number, number] = [newCenter.getLng(), newCenter.getLat()];
+            setCenter(centerArr);
+            markerInstance.current.setPosition(newCenter);
+          });
+
+          // 点击地图更新位置
           map.on('click', (e: any) => {
             const newCenter: [number, number] = [e.lnglat.getLng(), e.lnglat.getLat()];
             setCenter(newCenter);
@@ -92,7 +164,6 @@ const MapPickerModal: React.FC<MapPickerModalProps> = ({ onClose, onConfirm }) =
           });
 
           setStatus('ready');
-          // 强制触发一次重绘，解决容器高度塌陷导致的渲染空白
           setTimeout(() => map.container && (map as any).resize(), 100);
         };
 
@@ -100,7 +171,6 @@ const MapPickerModal: React.FC<MapPickerModalProps> = ({ onClose, onConfirm }) =
 
       } catch (err: any) {
         console.warn('Map Initialization Warning:', err);
-        // 如果是常见的 SecurityError，尝试忽略并继续渲染
         if (err.name === 'SecurityError') {
            console.log('Detected environment security policy, attempting fallback...');
         } else {
@@ -130,6 +200,15 @@ const MapPickerModal: React.FC<MapPickerModalProps> = ({ onClose, onConfirm }) =
     const count = Math.floor((Math.PI * Math.pow(radius / 10, 2)) * baseDensity);
     setDeviceCount(count);
   }, [radius, status]);
+
+  // 监听中心点变化，更新地图视图和覆盖物
+  useEffect(() => {
+    if (mapInstance.current && circleInstance.current && markerInstance.current && status === 'ready') {
+      mapInstance.current.setCenter(center);
+      circleInstance.current.setCenter(center);
+      markerInstance.current.setPosition(center);
+    }
+  }, [center, status]);
 
   return (
     <div className="fixed inset-0 z-[150] flex items-center justify-center bg-[#0a0a14]/95 backdrop-blur-xl p-6 animate-in fade-in duration-300">
@@ -188,9 +267,24 @@ const MapPickerModal: React.FC<MapPickerModalProps> = ({ onClose, onConfirm }) =
             {status === 'ready' && (
               <>
                 <div className="absolute top-6 left-6 pointer-events-none space-y-2 z-10">
-                  <div className="bg-[#0d0d1a]/80 backdrop-blur-md px-4 py-2 rounded-xl border border-purple-500/30 text-[9px] font-black text-purple-400 uppercase tracking-widest shadow-lg">
+                  {!locationLoaded && (
+                    <div className="bg-[#0d0d1a]/80 backdrop-blur-md px-4 py-2 rounded-xl border border-amber-500/30 text-[9px] font-black text-amber-400 uppercase tracking-widest shadow-lg animate-pulse">
+                      <span className="mr-2">⌛</span>正在获取您的位置...
+                    </div>
+                  )}
+                  {locationLoaded && center[0] !== 121.4737 && center[1] !== 31.2304 && (
+                    <div className="bg-[#0d0d1a]/80 backdrop-blur-md px-4 py-2 rounded-xl border border-emerald-500/30 text-[9px] font-black text-emerald-400 uppercase tracking-widest shadow-lg">
+                      <span className="mr-2">✓</span>已定位到您当前的位置
+                    </div>
+                  )}
+                  {geoError && (
+                    <div className="bg-[#0d0d1a]/80 backdrop-blur-md px-4 py-2 rounded-xl border border-rose-500/30 text-[9px] font-black text-rose-400 uppercase tracking-widest shadow-lg">
+                      <span className="mr-2">⚠</span>{geoError}
+                    </div>
+                  )}
+                  {/* <div className="bg-[#0d0d1a]/80 backdrop-blur-md px-4 py-2 rounded-xl border border-purple-500/30 text-[9px] font-black text-purple-400 uppercase tracking-widest shadow-lg">
                     <span className="animate-pulse mr-2 text-emerald-500">●</span> 卫星实时渲染中
-                  </div>
+                  </div> */}
                 </div>
 
                 <div className="absolute bottom-6 right-6 flex flex-col gap-2 z-10">
