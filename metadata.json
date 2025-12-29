@@ -1,0 +1,7 @@
+{
+  "name": "VisionQuest AI - 智能图搜系统",
+  "description": "A high-performance intelligent image search and surveillance analysis platform featuring multi-modal search, trajectory tracking, and micro-model training capabilities.",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}
