@@ -1,8 +1,7 @@
-
 import React from 'react';
 import { ICONS } from '../constants';
 
-const InferenceHistory: React.FC = () => {
+const HistoryPage: React.FC = () => {
   const stats = [
     { 
       label: '历史推理图片总量', 
@@ -39,7 +38,6 @@ const InferenceHistory: React.FC = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
            {stats.map(s => (
              <div key={s.label} className={`glass-panel p-10 rounded-[3rem] border border-white/5 relative overflow-hidden group bg-gradient-to-br ${s.gradient}`}>
-                {/* Decorative Icon Background */}
                 <div className="absolute -top-6 -right-6 p-8 opacity-[0.03] group-hover:opacity-[0.07] group-hover:scale-150 transition-all duration-700 pointer-events-none">
                   <div className={`${s.color} scale-[4]`}>{s.icon}</div>
                 </div>
@@ -67,13 +65,11 @@ const InferenceHistory: React.FC = () => {
                   </div>
                 </div>
                 
-                {/* Bottom Accent Line */}
                 <div className={`absolute bottom-0 left-0 h-1 bg-gradient-to-r ${s.color.replace('text', 'from')} to-transparent w-full opacity-30`} />
              </div>
            ))}
         </div>
 
-        {/* Minimal Bottom Info */}
         <div className="pt-12 flex justify-center border-t border-white/5">
           <div className="flex items-center gap-8 text-[10px] font-black text-slate-600 uppercase tracking-[0.3em]">
             <div className="flex items-center gap-2">
@@ -89,4 +85,4 @@ const InferenceHistory: React.FC = () => {
   );
 };
 
-export default InferenceHistory;
+export default HistoryPage;

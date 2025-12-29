@@ -1,20 +1,27 @@
-
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useOutletContext } from 'react-router-dom';
 import { ICONS } from '../constants';
 import { SearchType, SearchParams } from '../types';
-import MapPickerModal from './MapPickerModal';
+import MapPickerModal from '../components/MapPickerModal';
 
-interface SearchHomeProps {
+interface HomePageProps {
   onSearch: (params: Partial<SearchParams>, type: SearchType) => void;
 }
 
-const SearchHome: React.FC<SearchHomeProps> = ({ onSearch }) => {
+interface OutletContext {
+  searchParams: SearchParams;
+  onSearch: (params: Partial<SearchParams>, type: SearchType) => void;
+}
+
+const HomePage: React.FC<HomePageProps> = () => {
+  const navigate = useNavigate();
+  const context = useOutletContext<OutletContext>();
+  const onSearch = context?.onSearch;
   const [activeTab, setActiveTab] = useState<'IMAGE' | 'VIDEO'>('IMAGE');
   const [inputValue, setInputValue] = useState('');
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [spatialRange, setSpatialRange] = useState<string[]>([]);
   const [isFocused, setIsFocused] = useState(false);
-  
   const [timeMode, setTimeMode] = useState<'1d' | '3d' | '7d' | 'custom'>('7d');
   const [showMapModal, setShowMapModal] = useState(false);
   const [spatialInfo, setSpatialInfo] = useState<{ radius: number; deviceCount: number } | null>(null);
@@ -22,6 +29,8 @@ const SearchHome: React.FC<SearchHomeProps> = ({ onSearch }) => {
   const [loadingStep, setLoadingStep] = useState(0);
   const [displayPlaceholder, setDisplayPlaceholder] = useState('');
   const [cursorVisible, setCursorVisible] = useState(true);
+  const [similarity, setSimilarity] = useState(70);
+  const [isDragging, setIsDragging] = useState(false);
 
   const hotSearches = [
     { label: '人体', icon: '👤' },
@@ -99,11 +108,14 @@ const SearchHome: React.FC<SearchHomeProps> = ({ onSearch }) => {
 
     setTimeout(() => {
       clearInterval(interval);
-      onSearch({ 
-        spatialRange: spatialInfo ? ['SIMULATED_RANGE'] : [], 
-        timeRange: timeMode === 'custom' ? 'custom' : (timeMode as any) 
-      }, searchType);
+      if (onSearch) {
+        onSearch({ 
+          spatialRange: spatialInfo ? ['SIMULATED_RANGE'] : [], 
+          timeRange: timeMode === 'custom' ? 'custom' : (timeMode as any) 
+        }, searchType);
+      }
       setIsLoading(false);
+      navigate('/results');
     }, 2200);
   };
 
@@ -115,7 +127,16 @@ const SearchHome: React.FC<SearchHomeProps> = ({ onSearch }) => {
 
   return (
     <div className="flex-1 flex flex-col items-center justify-center p-8 max-w-6xl mx-auto w-full relative">
-      {showMapModal && <MapPickerModal onClose={() => setShowMapModal(false)} onConfirm={handleMapConfirm} />}
+      {showMapModal && (
+        <MapPickerModal 
+          onClose={() => setShowMapModal(false)} 
+          onConfirm={(data) => {
+            setSpatialInfo({ radius: data.radius, deviceCount: data.deviceCount });
+            setSpatialRange(['SIMULATED_RADIUS_RANGE']);
+            setShowMapModal(false);
+          }} 
+        />
+      )}
 
       {isLoading && (
         <div className="fixed inset-0 z-[200] flex flex-col items-center justify-center bg-black/80 backdrop-blur-2xl animate-in fade-in duration-300">
@@ -160,7 +181,6 @@ const SearchHome: React.FC<SearchHomeProps> = ({ onSearch }) => {
       </div>
 
       <div className="w-full glass-panel rounded-[2.5rem] overflow-hidden shadow-2xl border-white/5 relative">
-        {/* Tabs */}
         <div className="flex bg-[var(--tab-bg)] border-b border-[var(--border-color)]">
           <button 
             onClick={() => setActiveTab('IMAGE')}
@@ -176,16 +196,10 @@ const SearchHome: React.FC<SearchHomeProps> = ({ onSearch }) => {
           </button>
         </div>
 
-        {/* Main Content Area */}
         <div className="p-10 space-y-6 relative z-10">
           <div className="space-y-4">
             <div className="relative group">
-              {/* 搜索框光晕效果 */}
-              <div className={`absolute -inset-0.5 bg-gradient-to-r from-purple-500 to-indigo-500 rounded-3xl opacity-0 transition-all duration-500 blur-lg
-                ${isFocused ? 'opacity-30' : ''}`} />
-              
-              <div className={`relative flex gap-4 p-4 bg-black/40 border rounded-3xl transition-all duration-300
-                ${isFocused ? 'border-purple-500/50 shadow-[0_0_30px_rgba(139,92,246,0.2)]' : 'border-white/5 hover:border-white/10'}`}>
+              <div className={`relative flex gap-4 p-4 bg-black/40 border rounded-3xl transition-all duration-300 ${isFocused ? 'border-purple-500/50' : 'border-white/5 hover:border-white/10'}`}>
                 <div className="relative flex-1">
                   <textarea 
                     value={inputValue}
@@ -196,7 +210,6 @@ const SearchHome: React.FC<SearchHomeProps> = ({ onSearch }) => {
                     className="w-full bg-transparent text-lg text-[var(--text-primary)] placeholder-slate-600 focus:outline-none resize-none pt-2 pb-2"
                   />
                   
-                  {/* 打字机占位符 */}
                   {!inputValue && (
                     <div className="absolute left-0 top-2 text-lg pointer-events-none">
                       <span className="text-slate-600">{displayPlaceholder}</span>
@@ -204,7 +217,7 @@ const SearchHome: React.FC<SearchHomeProps> = ({ onSearch }) => {
                     </div>
                   )}
                 </div>
-                
+                  
                 <div className="w-28 border-l border-white/5 pl-4 flex flex-col items-center justify-center gap-2">
                   {selectedImage ? (
                     <div className="relative w-full aspect-square rounded-xl overflow-hidden border border-purple-500/50 shadow-lg group/img animate-[fadeIn_0.3s_ease-out]">
@@ -247,135 +260,155 @@ const SearchHome: React.FC<SearchHomeProps> = ({ onSearch }) => {
             </div>
           </div>
 
-          {/* Unified Config Strip */}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-8 pt-8 border-t border-white/5">
-             <div className="space-y-4">
-               <label className="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em] flex items-center gap-2">
-                 {ICONS.Clock} 时间范围
-               </label>
-               <div className="grid grid-cols-2 gap-2">
-                 {['1d', '3d', '7d', 'custom'].map((t, i) => (
-                   <button 
+            <div className="space-y-4">
+              <label className="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em] flex items-center gap-2">
+                {ICONS.Clock} 时间范围
+              </label>
+              <div className="grid grid-cols-2 gap-2">
+                {['1d', '3d', '7d', 'custom'].map((t, i) => (
+                  <button 
                     key={t} 
                     onClick={() => setTimeMode(t as any)}
-                    className={`py-2 rounded-xl text-[10px] font-black uppercase tracking-widest border transition-all relative overflow-hidden
-                      ${timeMode === t ? 'bg-purple-600 border-purple-600 text-white shadow-lg' : 'border-white/10 text-slate-400 hover:border-purple-500/30'}`}
-                   >
-                     {timeMode === t && (
-                       <span className="absolute inset-0 bg-gradient-to-r from-purple-400/20 to-indigo-400/20 animate-pulse" />
-                     )}
-                     <span className="relative z-10">{t === 'custom' ? '自定义' : t.replace('d', '天内')}</span>
-                   </button>
-                 ))}
-               </div>
-             </div>
+                    className={`py-2 rounded-xl text-[10px] font-black uppercase tracking-widest border transition-all relative overflow-hidden ${timeMode === t ? 'bg-purple-600 border-purple-600 text-white shadow-lg' : 'border-white/10 text-slate-400 hover:border-purple-500/30'}`}
+                  >
+                    {timeMode === t && (
+                      <span className="absolute inset-0 bg-gradient-to-r from-purple-400/20 to-indigo-400/20 animate-pulse" />
+                    )}
+                    <span className="relative z-10">{t === 'custom' ? '自定义' : t.replace('d', '天内')}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
 
-             <div className="space-y-4">
-               <label className="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em] flex items-center gap-2">
-                 {ICONS.Map} 空间范围
-               </label>
-               <button 
+            <div className="space-y-4">
+              <label className="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em] flex items-center gap-2">
+                {ICONS.Map} 空间范围
+              </label>
+              <button 
                 onClick={() => setShowMapModal(true)}
-                className={`w-full h-[64px] border-2 border-dashed rounded-2xl flex flex-col items-center justify-center gap-1 transition-all group relative overflow-hidden
-                  ${spatialInfo ? 'bg-purple-600/10 border-purple-500 text-purple-400' : 'border-white/10 hover:border-purple-500/40'}`}
-               >
-                 {!spatialInfo && (
-                   <div className="absolute inset-0 bg-gradient-to-r from-transparent via-purple-500/5 to-transparent translate-x-[-100%] animate-[shimmer_2s_infinite]" />
-                 )}
-                  <span className="text-[10px] font-black uppercase tracking-widest">
-                    {spatialInfo ? `已选范围: ${spatialInfo.radius}米` : '地图选点/区域'}
-                  </span>
-                  <span className="text-[9px] font-bold text-slate-500 uppercase">
-                    {spatialInfo ? `覆盖 ${spatialInfo.deviceCount} 个监控设备` : '选择特定区域内的设备'}
-                  </span>
-               </button>
-             </div>
+                className={`w-full h-[64px] border-2 border-dashed rounded-2xl flex flex-col items-center justify-center gap-1 transition-all group relative overflow-hidden ${spatialInfo ? 'bg-purple-600/10 border-purple-500 text-purple-400' : 'border-white/10 hover:border-purple-500/40'}`}
+              >
+                {!spatialInfo && (
+                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-purple-500/5 to-transparent translate-x-[-100%] animate-[shimmer_2s_infinite]" />
+                )}
+                <span className="text-[10px] font-black uppercase tracking-widest">
+                  {spatialInfo ? `已选范围: ${spatialInfo.radius}米` : '地图选点/区域'}
+                </span>
+                <span className="text-[9px] font-bold text-slate-500 uppercase">
+                  {spatialInfo ? `覆盖 ${spatialInfo.deviceCount} 个监控设备` : '选择特定区域内的设备'}
+                </span>
+              </button>
+            </div>
 
-             <div className="space-y-4">
-               <div className="flex justify-between items-center">
-                 <label className="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em] flex items-center gap-2">
-                   {ICONS.Filter} 相似度
-                 </label>
-                 <span className="text-lg font-black purple-gradient-text tabular-nums animate-[pulse_2s_ease-in-out_infinite]">70%</span>
-               </div>
-               <div className="pt-2 px-1 relative">
-                <input type="range" min="50" max="100" className="w-full h-1 bg-white/5 rounded-full appearance-none cursor-pointer accent-purple-600 relative z-10" defaultValue={70} />
-                <div className="absolute inset-0 h-1 bg-white/5 rounded-full overflow-hidden pointer-events-none">
-                  <div className="h-full w-[70%] bg-gradient-to-r from-purple-500 to-pink-500 rounded-full animate-[glow_2s_ease-in-out_infinite]" />
+            <div className="space-y-3">
+              <div className="flex justify-between items-center">
+                <label className="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em] flex items-center gap-2">
+                  {ICONS.Filter} 相似度
+                </label>
+                <span className={`text-lg font-black purple-gradient-text tabular-nums ${isDragging ? 'animate-none' : 'animate-[pulse_2s_ease-in-out_infinite]'}`}>{similarity}%</span>
+              </div>
+              <div 
+                className="w-full pt-1 select-none"
+                onMouseMove={(e) => {
+                  if (isDragging) {
+                    const rect = e.currentTarget.getBoundingClientRect();
+                    const x = e.clientX - rect.left;
+                    const percentage = Math.round(50 + (x / rect.width) * 50);
+                    setSimilarity(Math.max(50, Math.min(100, percentage)));
+                  }
+                }}
+                onMouseUp={() => setIsDragging(false)}
+                onMouseLeave={() => setIsDragging(false)}
+                onTouchMove={(e) => {
+                  e.preventDefault();
+                  const touch = e.touches[0];
+                  const rect = e.currentTarget.getBoundingClientRect();
+                  const x = touch.clientX - rect.left;
+                  const percentage = Math.round(50 + (x / rect.width) * 50);
+                  setSimilarity(Math.max(50, Math.min(100, percentage)));
+                }}
+                onTouchEnd={() => setIsDragging(false)}
+              >
+                <div 
+                  className="h-10 flex items-end justify-between gap-[3px] cursor-pointer active:cursor-grabbing"
+                  onMouseDown={() => setIsDragging(true)}
+                  onTouchStart={(e) => { e.preventDefault(); setIsDragging(true); }}
+                >
+                  {[50, 55, 60, 65, 70, 75, 80, 85, 90, 95, 100].map((value) => {
+                    const isActive = value <= similarity;
+                    const isCurrent = value === similarity;
+                    return (
+                      <div
+                        key={value}
+                        className={`flex-1 rounded-t transition-all duration-150 ${
+                          isActive 
+                            ? isCurrent
+                              ? 'bg-gradient-to-t from-purple-500 to-purple-400 shadow-[0_0_12px_rgba(168,85,247,0.4)]'
+                              : 'bg-gradient-to-b from-purple-500/30 to-purple-600/50'
+                            : 'bg-white/10'
+                        }`}
+                        style={{
+                          height: isCurrent 
+                            ? '2.2rem' 
+                            : isActive 
+                              ? `${0.4 + (value / 100) * 1.2}rem` 
+                              : '0.4rem',
+                          opacity: isCurrent ? 1 : (isActive ? 0.85 : 0.45)
+                        }}
+                      />
+                    );
+                  })}
                 </div>
-                <div className="flex justify-between mt-2 text-[8px] font-bold text-slate-600 uppercase tracking-tighter">
+                <div className="flex justify-between mt-3 text-[8px] font-bold text-slate-600 uppercase tracking-tighter">
                   <span className="hover:text-purple-400 transition-colors cursor-default">较模糊</span>
                   <span className="hover:text-purple-400 transition-colors cursor-default">极精准</span>
                 </div>
-               </div>
-             </div>
+              </div>
+            </div>
 
-             <div className="flex items-end">
-               <button 
-                  onClick={handleExecute}
-                  disabled={isLoading}
-                  className="w-full relative bg-gradient-to-br from-purple-600 to-indigo-700 hover:from-purple-500 hover:to-indigo-600 text-white py-5 rounded-3xl shadow-[0_15px_30px_rgba(139,92,246,0.3)] transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed group overflow-hidden"
-               >
-                 {/* 波纹效果 */}
-                 <span className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000 ease-in-out" />
-                 
-                 {/* 脉冲光环 */}
-                 <span className="absolute inset-0 rounded-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                   <span className="absolute inset-0 rounded-3xl animate-[ping_2s_ease-out_infinite]" style={{ background: 'radial-gradient(circle, rgba(139,92,246,0.4) 0%, transparent 70%)' }} />
-                 </span>
-                 
-                 {/* 内部光晕 */}
-                 <span className="absolute inset-0 rounded-3xl opacity-0 group-hover:opacity-100 transition-all duration-500">
-                   <span className="absolute top-0 left-1/2 -translate-x-1/2 w-1/2 h-1/2 bg-gradient-to-b from-white/20 to-transparent rounded-t-3xl" />
-                 </span>
-                 
-                 <span className="relative z-10 text-sm font-black tracking-[0.2em] uppercase group-hover:scale-105 transition-transform flex items-center justify-center gap-2">
-                   {isLoading ? (
-                     <>
-                       <span className="animate-[spin_1s_linear_infinite]">{ICONS.Search}</span>
-                       搜索中...
-                     </>
-                   ) : (
-                     <>
-                       <span className="group-hover:rotate-12 transition-transform">{ICONS.Search}</span>
-                       开始分析
-                     </>
-                   )}
-                 </span>
-               </button>
-             </div>
+            <div className="flex items-end">
+              <button 
+                onClick={handleExecute}
+                disabled={isLoading}
+                className="w-full relative bg-gradient-to-br from-purple-600 to-indigo-700 hover:from-purple-500 hover:to-indigo-600 text-white py-5 rounded-3xl shadow-[0_15px_30px_rgba(139,92,246,0.3)] transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed group overflow-hidden"
+              >
+                <span className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000 ease-in-out" />
+                <span className="absolute inset-0 rounded-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                  <span className="absolute inset-0 rounded-3xl animate-[ping_2s_ease-out_infinite]" style={{ background: 'radial-gradient(circle, rgba(139,92,246,0.4) 0%, transparent 70%)' }} />
+                </span>
+                <span className="absolute inset-0 rounded-3xl opacity-0 group-hover:opacity-100 transition-all duration-500">
+                  <span className="absolute top-0 left-1/2 -translate-x-1/2 w-1/2 h-1/2 bg-gradient-to-b from-white/20 to-transparent rounded-t-3xl" />
+                </span>
+                <span className="relative z-10 text-sm font-black tracking-[0.2em] uppercase group-hover:scale-105 transition-transform flex items-center justify-center gap-2">
+                  {isLoading ? (
+                    <>
+                      <span className="animate-[spin_1s_linear_infinite]">{ICONS.Search}</span>
+                      搜索中...
+                    </>
+                  ) : (
+                    <>
+                      <span className="group-hover:rotate-12 transition-transform">{ICONS.Search}</span>
+                      开始分析
+                    </>
+                  )}
+                </span>
+              </button>
+            </div>
           </div>
         </div>
       </div>
       
       <style>{`
-        @keyframes shimmer {
-          0% { background-position: -200% 0; }
-          100% { background-position: 200% 0; }
-        }
-        @keyframes lightMove {
-          0% { transform: translateX(-100%); }
-          100% { transform: translateX(100%); }
-        }
-        @keyframes scan {
-          0% { transform: translateX(0); }
-          100% { transform: translateX(233%); }
-        }
-        @keyframes glow {
-          0%, 100% { opacity: 0.5; box-shadow: 0 0 5px rgba(139,92,246,0.5); }
-          50% { opacity: 1; box-shadow: 0 0 20px rgba(139,92,246,0.8); }
-        }
-        @keyframes fadeIn {
-          from { opacity: 0; }
-          to { opacity: 1; }
-        }
-        @keyframes fadeInUp {
-          from { opacity: 0; transform: translateY(10px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
+        @keyframes shimmer { 0% { background-position: -200% 0; } 100% { background-position: 200% 0; } }
+        @keyframes lightMove { 0% { transform: translateX(-100%); } 100% { transform: translateX(100%); } }
+        @keyframes scan { 0% { transform: translateX(0); } 100% { transform: translateX(233%); } }
+        @keyframes glow { 0%, 100% { opacity: 0.5; box-shadow: 0 0 5px rgba(139,92,246,0.5); } 50% { opacity: 1; box-shadow: 0 0 20px rgba(139,92,246,0.8); } }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes fadeInUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
       `}</style>
     </div>
   );
 };
 
-export default SearchHome;
+export default HomePage;

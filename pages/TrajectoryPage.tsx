@@ -1,20 +1,28 @@
-
 import React, { useState, useEffect, useRef } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { ICONS } from '../constants';
 
-interface TrajectoryViewProps {
-  items: any[];
-  onBack: () => void;
+interface TrajectoryItem {
+  id: string;
+  url: string;
+  coordinates: [number, number];
+  timestamp: string;
+  location: string;
+  camera: string;
+  similarity: number;
+  type: string;
 }
 
-const TrajectoryView: React.FC<TrajectoryViewProps> = ({ items, onBack }) => {
+const TrajectoryPage: React.FC = () => {
+  const location = useLocation();
+  const navigate = useNavigate();
+  const items = (location.state?.items || []) as TrajectoryItem[];
   const [selectedIdx, setSelectedIdx] = useState(0);
   const [mapStatus, setMapStatus] = useState<'loading' | 'ready' | 'error'>('loading');
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapInstance = useRef<any>(null);
   const markersRef = useRef<any[]>([]);
 
-  // Sort items by timestamp to ensure chronological order
   const sortedItems = [...items].sort((a, b) => 
     new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
   );
@@ -53,7 +61,6 @@ const TrajectoryView: React.FC<TrajectoryViewProps> = ({ items, onBack }) => {
         mapInstance.current = map;
 
         map.on('complete', () => {
-          // Draw Polyline for trajectory
           const polyline = new AMap.Polyline({
             path: path,
             isOutline: true,
@@ -70,7 +77,6 @@ const TrajectoryView: React.FC<TrajectoryViewProps> = ({ items, onBack }) => {
           });
           map.add(polyline);
 
-          // Add Markers
           sortedItems.forEach((item, idx) => {
             const marker = new AMap.Marker({
               position: item.coordinates,
@@ -117,12 +123,15 @@ const TrajectoryView: React.FC<TrajectoryViewProps> = ({ items, onBack }) => {
     }
   };
 
+  const handleBack = () => {
+    navigate(-1);
+  };
+
   return (
     <div className="flex-1 flex overflow-hidden bg-[#050508]">
-      {/* Left List Panel */}
       <div className="w-[450px] border-r border-white/5 flex flex-col bg-[#080810] relative z-20 shadow-2xl">
         <div className="p-8 border-b border-white/5 bg-gradient-to-b from-purple-900/10 to-transparent">
-          <button onClick={onBack} className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 hover:text-purple-400 mb-6 flex items-center gap-2 transition-all">
+          <button onClick={handleBack} className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 hover:text-purple-400 mb-6 flex items-center gap-2 transition-all">
             ← 返回检索列表
           </button>
           <div className="flex items-center gap-4">
@@ -182,7 +191,6 @@ const TrajectoryView: React.FC<TrajectoryViewProps> = ({ items, onBack }) => {
         </div>
       </div>
 
-      {/* Right Map Area */}
       <div className="flex-1 relative bg-[#010206]">
         <div ref={mapContainerRef} className="absolute inset-0 w-full h-full" />
         
@@ -193,7 +201,6 @@ const TrajectoryView: React.FC<TrajectoryViewProps> = ({ items, onBack }) => {
           </div>
         )}
 
-        {/* HUD UI */}
         <div className="absolute top-10 left-10 pointer-events-none space-y-4 z-10">
            <div className="bg-black/80 backdrop-blur-md px-6 py-3 rounded-2xl border border-purple-500/30 text-[11px] font-black text-purple-400 uppercase tracking-[0.2em] shadow-2xl flex items-center gap-4">
               <span className="w-2.5 h-2.5 bg-emerald-500 rounded-full animate-pulse shadow-[0_0_10px_#10b981]" />
@@ -229,4 +236,4 @@ const TrajectoryView: React.FC<TrajectoryViewProps> = ({ items, onBack }) => {
   );
 };
 
-export default TrajectoryView;
+export default TrajectoryPage;

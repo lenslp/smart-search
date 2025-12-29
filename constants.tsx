@@ -6,7 +6,8 @@ import {
   Crosshair, User, Car, Bike, Video, Clock, 
   Settings, ChevronDown, CheckCircle, XCircle, Plus,
   Sun, Moon, Upload, BarChart3, ListChecks, PlayCircle,
-  Bell, MessageSquare, Mail, Globe, Trash2
+  Bell, MessageSquare, Mail, Globe, Trash2,
+  Home, Map
 } from 'lucide-react';
 import { TargetType, TaskStatus, Task } from './types';
 
@@ -41,7 +42,11 @@ export const ICONS = {
   SMS: <MessageSquare size={18} />,
   Mail: <Mail size={18} />,
   Web: <Globe size={18} />,
-  Trash: <Trash2 size={16} />
+  Trash: <Trash2 size={16} />,
+  Home: <Home size={18} />,
+  Task: <ListChecks size={18} />,
+  Stats: <BarChart3 size={18} />,
+  Location: <MapPin size={16} />
 };
 
 export const MOCK_TASKS: Task[] = [

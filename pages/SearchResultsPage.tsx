@@ -1,35 +1,35 @@
-
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { ICONS, MOCK_RESULTS } from '../constants';
-import { SearchParams, TargetType, SampleLabel, SearchType } from '../types';
-import ResultCard from './ResultCard';
-import TrainingModeBar from './TrainingModeBar';
-import ManualCropModal from './ManualCropModal';
-import VideoPlayerModal from './VideoPlayerModal';
-import MapPickerModal from './MapPickerModal';
-import SurveillanceModal from './SurveillanceModal';
+import { SearchParams, SampleLabel, SearchType } from '../types';
+import ResultCard from '../components/ResultCard';
+import TrainingModeBar from '../components/TrainingModeBar';
+import ManualCropModal from '../components/ManualCropModal';
+import VideoPlayerModal from '../components/VideoPlayerModal';
+import MapPickerModal from '../components/MapPickerModal';
+import SurveillanceModal from '../components/SurveillanceModal';
 
-interface SearchResultsProps {
-  params: SearchParams;
-  onSearch: (params: Partial<SearchParams>, type?: SearchType) => void;
-  onBack: () => void;
-  onOpenTrajectory: (items: any[]) => void;
+interface SearchResultsPageProps {
+  initialParams?: SearchParams;
 }
 
-const SearchResults: React.FC<SearchResultsProps> = ({ params, onSearch, onBack, onOpenTrajectory }) => {
+const SearchResultsPage: React.FC<SearchResultsPageProps> = ({ initialParams }) => {
+  const navigate = useNavigate();
+  const [params, setParams] = useState<SearchParams>(initialParams || {
+    timeRange: '7d',
+    spatialRange: [],
+    similarity: 70
+  });
   const [isTrainingMode, setIsTrainingMode] = useState(false);
   const [labels, setLabels] = useState<Record<string, SampleLabel>>({});
   const [selectedResults, setSelectedResults] = useState<string[]>([]);
   const [croppingImage, setCroppingImage] = useState<string | null>(null);
   const [playingVideo, setPlayingVideo] = useState<string | null>(null);
   const [showSurveillanceModal, setShowSurveillanceModal] = useState(false);
-  
   const [inputValue, setInputValue] = useState('');
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [showMapModal, setShowMapModal] = useState(false);
   const [spatialInfo, setSpatialInfo] = useState<{ radius: number; deviceCount: number } | null>(null);
-  
-  const [activeTab, setActiveTab] = useState<'IMAGE' | 'VIDEO'>('IMAGE');
 
   const toggleTrainingMode = () => {
     setIsTrainingMode(!isTrainingMode);
@@ -45,10 +45,11 @@ const SearchResults: React.FC<SearchResultsProps> = ({ params, onSearch, onBack,
   };
 
   const handleExecute = () => {
-    const searchType = activeTab === 'VIDEO' ? SearchType.VIDEO : (selectedImage ? SearchType.IMAGE : SearchType.TEXT);
-    onSearch({
-      spatialRange: spatialInfo ? ['SIMULATED_RANGE'] : [],
-    }, searchType);
+    const searchType = selectedImage ? SearchType.IMAGE : SearchType.TEXT;
+    setParams(prev => ({
+      ...prev,
+      spatialRange: spatialInfo ? ['SIMULATED_RANGE'] : []
+    }));
   };
 
   const handleMapConfirm = (data: { radius: number; deviceCount: number }) => {
@@ -63,19 +64,16 @@ const SearchResults: React.FC<SearchResultsProps> = ({ params, onSearch, onBack,
 
   const handleGenerateTrajectory = (specificItem?: any) => {
     if (specificItem) {
-      // Logic for single item: simulate trajectory by finding "similar" items in different times/locations
-      // For mock, we'll just pick a random set of results including the specific one
       const simulatedTrajectory = MOCK_RESULTS
         .filter(r => r.type === specificItem.type)
         .slice(0, 5);
       if (!simulatedTrajectory.find(i => i.id === specificItem.id)) {
         simulatedTrajectory.push(specificItem);
       }
-      onOpenTrajectory(simulatedTrajectory);
+      navigate('/trajectory', { state: { items: simulatedTrajectory } });
     } else {
-      // Batch logic: use selected results
       const selectedData = MOCK_RESULTS.filter(r => selectedResults.includes(r.id));
-      onOpenTrajectory(selectedData);
+      navigate('/trajectory', { state: { items: selectedData } });
     }
   };
 
@@ -94,11 +92,10 @@ const SearchResults: React.FC<SearchResultsProps> = ({ params, onSearch, onBack,
         />
       )}
       
-      {/* Top Search & Config Area */}
       <div className="glass-panel border-b border-white/5 p-6 space-y-6 z-20">
         <div className="max-w-7xl mx-auto space-y-4">
           <div className="flex items-center justify-between mb-2">
-            <button onClick={onBack} className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 hover:text-purple-400 transition-all flex items-center gap-2">
+            <button onClick={() => navigate('/')} className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 hover:text-purple-400 transition-all flex items-center gap-2">
               ← 返回主页
             </button>
           </div>
@@ -134,7 +131,6 @@ const SearchResults: React.FC<SearchResultsProps> = ({ params, onSearch, onBack,
             </div>
           </div>
 
-          {/* Configuration Strip Optimized */}
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6 pt-4">
              <div className="space-y-2">
                <label className="text-[9px] font-black text-slate-500 uppercase tracking-[0.2em] flex items-center gap-2">{ICONS.Clock} 时间</label>
@@ -186,9 +182,7 @@ const SearchResults: React.FC<SearchResultsProps> = ({ params, onSearch, onBack,
         </div>
       </div>
 
-      {/* Results Content Area */}
       <div className="flex-1 flex flex-col relative overflow-hidden">
-        {/* Results Info Bar */}
         <div className="border-b border-white/5 bg-black/10">
           <div className="max-w-7xl mx-auto px-8 py-4 flex items-center justify-between">
             <div className="flex items-center gap-3">
@@ -231,7 +225,6 @@ const SearchResults: React.FC<SearchResultsProps> = ({ params, onSearch, onBack,
           </div>
         </div>
 
-        {/* Results Grid Area */}
         <div className="flex-1 overflow-y-auto p-8 scroll-smooth">
           <div className="max-w-7xl mx-auto space-y-6 pb-20">
             {isTrainingMode && (
@@ -263,11 +256,10 @@ const SearchResults: React.FC<SearchResultsProps> = ({ params, onSearch, onBack,
         </div>
       </div>
 
-      {/* Modals */}
       {croppingImage && <ManualCropModal imageUrl={croppingImage} onClose={() => setCroppingImage(null)} />}
       {playingVideo && <VideoPlayerModal resultId={playingVideo} onClose={() => setPlayingVideo(null)} />}
     </div>
   );
 };
 
-export default SearchResults;
+export default SearchResultsPage;

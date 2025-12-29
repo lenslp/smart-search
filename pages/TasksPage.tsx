@@ -1,9 +1,11 @@
-
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { ICONS, MOCK_TASKS } from '../constants';
 import { TaskStatus } from '../types';
 
-const TaskCenter: React.FC = () => {
+const TasksPage: React.FC = () => {
+  const navigate = useNavigate();
+
   return (
     <div className="flex-1 p-10 overflow-y-auto">
       <div className="max-w-7xl mx-auto space-y-10">
@@ -58,7 +60,10 @@ const TaskCenter: React.FC = () => {
                  <button className="flex-1 py-2.5 bg-white/5 hover:bg-purple-600/20 rounded-xl text-[10px] font-bold text-slate-400 hover:text-purple-400 transition-all uppercase tracking-widest">
                     查看报告
                  </button>
-                 <button className="flex-1 py-2.5 bg-white/5 hover:bg-purple-600/20 rounded-xl text-[10px] font-bold text-slate-400 hover:text-purple-400 transition-all uppercase tracking-widest">
+                 <button 
+                   onClick={() => navigate('/results')}
+                   className="flex-1 py-2.5 bg-white/5 hover:bg-purple-600/20 rounded-xl text-[10px] font-bold text-slate-400 hover:text-purple-400 transition-all uppercase tracking-widest"
+                 >
                     进入分析
                  </button>
               </div>
@@ -70,4 +75,4 @@ const TaskCenter: React.FC = () => {
   );
 };
 
-export default TaskCenter;
+export default TasksPage;
