@@ -55,7 +55,7 @@ const TrajectoryPage: React.FC = () => {
           viewMode: '3D',
           zoom: 14,
           center: path[0] || [121.4737, 31.2304],
-          mapStyle: 'amap://styles/darkblue',
+          mapStyle: 'amap://styles/standard',
         });
 
         mapInstance.current = map;

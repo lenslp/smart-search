@@ -100,7 +100,7 @@ const MapPickerModal: React.FC<MapPickerModalProps> = ({ onClose, onConfirm }) =
           viewMode: '3D',
           zoom: 14,
           center: initialCenterRef.current,
-          mapStyle: 'amap://styles/darkblue',
+          mapStyle: 'amap://styles/standard',
           animateEnable: true
         });
 
